@@ -13,317 +13,294 @@
     <div class="header-inner">
       <div>
         <h1>IGP 個別輔導計畫系統</h1>
-        <p>新竹縣資賦優異學生個別輔導計畫 — 教育目標及課程調整</p>
+        <p>新竹縣資賦優異學生個別輔導計畫 — 智慧版：範本一次設定，學生只填差異</p>
       </div>
-      <div class="header-status" id="sheet-status">
-        <span class="status-dot disconnected"></span>
-        <span id="status-text">尚未連線 Google Sheets</span>
+      <div class="conn-badge">
+        <span class="dot-ok"></span>已連線 Google Sheets
       </div>
     </div>
   </header>
 
-  <!-- Google Sheets 設定區 -->
-  <div class="setup-bar" id="setup-bar">
-    <div class="setup-inner">
-      <span class="setup-label">📊 Google Sheets 連線設定</span>
-      <input type="text" id="sheet-url-input" placeholder="貼上您的 Google Apps Script 網址（Web App URL）">
-      <button onclick="connectSheet()">連線</button>
-      <button class="btn-secondary" onclick="toggleSetup()">說明</button>
-    </div>
-    <div class="setup-help" id="setup-help" style="display:none">
-      <ol>
-        <li>開啟 Google 試算表，點選「擴充功能」→「Apps Script」</li>
-        <li>貼入 <code>google-apps-script.js</code> 的內容並儲存</li>
-        <li>點選「部署」→「新增部署作業」→「類型選 Web 應用程式」</li>
-        <li>「執行身分」選自己，「存取權」選「任何人」</li>
-        <li>複製產生的網址貼到上方欄位</li>
-      </ol>
-    </div>
+  <div class="mode-tabs">
+    <button class="mode-tab active" data-mode="tpl" onclick="switchMode('tpl')">
+      課程範本設定
+      <small>老師只需設定一次</small>
+    </button>
+    <button class="mode-tab" data-mode="stu" onclick="switchMode('stu')">
+      學生 IGP 填寫
+      <small>只填姓名＋評量結果</small>
+    </button>
+    <button class="mode-tab" data-mode="pvw" onclick="switchMode('pvw')">
+      批次預覽 / 匯出
+      <small>所有學生一覽</small>
+    </button>
   </div>
 
-  <!-- 步驟導覽 -->
-  <nav class="steps">
-    <button class="step-btn active" data-step="0" onclick="goTo(0)">① 學生資料</button>
-    <button class="step-btn" data-step="1" onclick="goTo(1)">② 課程設定</button>
-    <button class="step-btn" data-step="2" onclick="goTo(2)">③ 學習重點</button>
-    <button class="step-btn" data-step="3" onclick="goTo(3)">④ 調整策略</button>
-    <button class="step-btn" data-step="4" onclick="goTo(4)">⑤ 週次內容</button>
-    <button class="step-btn" data-step="5" onclick="goTo(5)">⑥ 質性評語</button>
-    <button class="step-btn" data-step="6" onclick="goTo(6)">⑦ 預覽匯出</button>
-  </nav>
-
   <main class="main">
+    <div class="msg" id="msg"></div>
 
-    <!-- Section 0: 學生基本資料 -->
-    <section class="section active" id="sec0">
-      <div class="card">
-        <div class="card-title">學生基本資料</div>
-        <div class="row-2">
-          <div class="form-group">
-            <label>學生姓名 <span class="required">*</span></label>
-            <input type="text" id="stu-name" placeholder="請輸入姓名">
+    <!-- ========== 課程範本 Panel ========== -->
+    <div class="panel active" id="panel-tpl">
+      <div class="steps-mini">
+        <button class="smb active" onclick="tplGo(0)">① 課程基本</button>
+        <button class="smb" onclick="tplGo(1)">② 學習重點</button>
+        <button class="smb" onclick="tplGo(2)">③ 調整策略</button>
+        <button class="smb" onclick="tplGo(3)">④ 週次內容</button>
+      </div>
+
+      <!-- 範本步驟 0：課程基本 -->
+      <div class="tsec active" id="t0">
+        <div class="card">
+          <div class="card-title">課程基本設定 <span class="badge-tpl">範本</span></div>
+          <div class="row-2">
+            <div class="fg"><label>課程名稱</label><input type="text" id="t-cn" placeholder="例：數學、英文、語文"></div>
+            <div class="fg"><label>學年度 / 學期</label>
+              <div class="inline-row">
+                <input type="text" id="t-year" placeholder="114" style="width:60px">
+                <span class="unit">學年</span>
+                <select id="t-sem">
+                  <option value="1">第 1 學期</option>
+                  <option value="2" selected>第 2 學期</option>
+                </select>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>學年度</label>
-            <div style="display:flex;gap:8px;align-items:center">
-              <input type="text" id="stu-year" placeholder="114" style="width:70px">
-              <span style="font-size:14px;color:var(--text-muted)">學年</span>
-              <select id="stu-sem">
-                <option value="1">第 1 學期</option>
-                <option value="2" selected>第 2 學期</option>
-              </select>
+          <div class="row-2">
+            <div class="fg"><label>教學年級</label><input type="text" id="t-grade" placeholder="例：七年級"></div>
+            <div class="fg"><label>每週節數</label><input type="text" id="t-hours" placeholder="例：4"></div>
+          </div>
+          <div class="row-2">
+            <div class="fg"><label>教學者</label><input type="text" id="t-teacher" placeholder="教師姓名"></div>
+            <div class="fg"><label>教育階段</label>
+              <div class="radio-group">
+                <label class="radio-item"><input type="radio" name="tstage" value="國中" checked> 國中</label>
+                <label class="radio-item"><input type="radio" name="tstage" value="高中"> 高中</label>
+                <label class="radio-item"><input type="radio" name="tstage" value="國小"> 國小</label>
+              </div>
+            </div>
+          </div>
+          <div class="fg"><label>課程類型</label>
+            <div class="check-group">
+              <label class="check-item"><input type="checkbox" id="t-ctd"> 領域學習課程</label>
+              <label class="check-item"><input type="checkbox" id="t-cts"> 特殊需求課程</label>
             </div>
           </div>
         </div>
-        <div class="form-group">
-          <label>教育階段</label>
-          <div class="radio-group">
-            <label class="radio-item"><input type="radio" name="stage" value="高中"> 高中</label>
-            <label class="radio-item"><input type="radio" name="stage" value="國中" checked> 國中</label>
-            <label class="radio-item"><input type="radio" name="stage" value="國小"> 國小</label>
-            <label class="radio-item"><input type="radio" name="stage" value="學前"> 學前</label>
-          </div>
+        <div class="card">
+          <div class="card-title">學年目標 <span class="badge-tpl">範本</span></div>
+          <textarea id="t-goal" rows="4" placeholder="請輸入整個學期的課程目標（5 點以內即可）..."></textarea>
+          <p class="hint">所有學生共用此目標，設定後不需重複填寫</p>
         </div>
-        <div class="row-2">
-          <div class="form-group">
-            <label>年級 / 班別</label>
-            <input type="text" id="stu-grade" placeholder="例：七年級 文津班">
-          </div>
-          <div class="form-group">
-            <label>撰寫教師</label>
-            <input type="text" id="teacher-name" placeholder="請輸入教師姓名">
-          </div>
+        <div class="nav-btns">
+          <span></span>
+          <button class="btn-primary" onclick="tplGo(1)">下一步 →</button>
         </div>
       </div>
-      <div class="nav-btns">
-        <span></span>
-        <button class="btn-primary" onclick="goTo(1)">下一步 →</button>
-      </div>
-    </section>
 
-    <!-- Section 1: 課程設定 -->
-    <section class="section" id="sec1">
-      <div class="card">
-        <div class="card-title">課程基本設定</div>
-        <div class="row-2">
-          <div class="form-group">
-            <label>課程名稱 <span class="required">*</span></label>
-            <input type="text" id="course-name" placeholder="例：數學、英文、語文">
+      <!-- 範本步驟 1：學習重點 -->
+      <div class="tsec" id="t1">
+        <div class="card">
+          <div class="card-title">核心素養 <span class="badge-tpl">範本</span></div>
+          <div class="comp-section">
+            <div class="comp-cat">A 自主行動</div>
+            <div class="check-group">
+              <label class="check-item"><input type="checkbox" class="tcomp" value="A1.身心素質與自我精進"> A1 身心素質與自我精進</label>
+              <label class="check-item"><input type="checkbox" class="tcomp" value="A2.系統思考與問題解決"> A2 系統思考與問題解決</label>
+              <label class="check-item"><input type="checkbox" class="tcomp" value="A3.規劃執行與創新應變"> A3 規劃執行與創新應變</label>
+            </div>
           </div>
-          <div class="form-group">
-            <label>教學年級 / 組別</label>
-            <input type="text" id="course-grade" placeholder="例：七年級">
+          <div class="comp-section">
+            <div class="comp-cat">B 溝通互動</div>
+            <div class="check-group">
+              <label class="check-item"><input type="checkbox" class="tcomp" value="B1.符號運用與溝通表達"> B1 符號運用與溝通表達</label>
+              <label class="check-item"><input type="checkbox" class="tcomp" value="B2.科技資訊與媒體素養"> B2 科技資訊與媒體素養</label>
+              <label class="check-item"><input type="checkbox" class="tcomp" value="B3.藝術涵養與美感素養"> B3 藝術涵養與美感素養</label>
+            </div>
+          </div>
+          <div class="comp-section">
+            <div class="comp-cat">C 社會參與</div>
+            <div class="check-group">
+              <label class="check-item"><input type="checkbox" class="tcomp" value="C1.道德實踐與公民意識"> C1 道德實踐與公民意識</label>
+              <label class="check-item"><input type="checkbox" class="tcomp" value="C2.人際關係與團隊合作"> C2 人際關係與團隊合作</label>
+              <label class="check-item"><input type="checkbox" class="tcomp" value="C3.多元文化與國際理解"> C3 多元文化與國際理解</label>
+            </div>
           </div>
         </div>
-        <div class="row-2">
-          <div class="form-group">
-            <label>每週教學節數</label>
-            <input type="text" id="course-hours" placeholder="例：4">
-          </div>
-          <div class="form-group">
-            <label>教學者</label>
-            <input type="text" id="course-teacher" placeholder="請輸入姓名">
-          </div>
+        <div class="card">
+          <div class="card-title">學習表現 <span class="badge-tpl">範本</span></div>
+          <textarea id="t-perf" rows="4" placeholder="參考課程計畫填寫學習表現指標..."></textarea>
         </div>
-        <div class="form-group">
-          <label>課程類型</label>
+        <div class="card">
+          <div class="card-title">學習內容 <span class="badge-tpl">範本</span></div>
+          <textarea id="t-lcont" rows="4" placeholder="參考課程計畫填寫學習內容..."></textarea>
+        </div>
+        <div class="nav-btns">
+          <button class="btn-outline" onclick="tplGo(0)">← 上一步</button>
+          <button class="btn-primary" onclick="tplGo(2)">下一步 →</button>
+        </div>
+      </div>
+
+      <!-- 範本步驟 2：調整策略 -->
+      <div class="tsec" id="t2">
+        <div class="card">
+          <div class="card-title">學習內容調整策略 <span class="badge-tpl">範本</span></div>
           <div class="check-group">
-            <label class="check-item"><input type="checkbox" id="ct-domain"> 領域學習課程</label>
-            <label class="check-item"><input type="checkbox" id="ct-special"> 特殊需求課程</label>
+            <label class="check-item"><input type="checkbox" class="tac" value="重組"> 重組</label>
+            <label class="check-item"><input type="checkbox" class="tac" value="加深"> 加深</label>
+            <label class="check-item"><input type="checkbox" class="tac" value="加廣"> 加廣</label>
+            <label class="check-item"><input type="checkbox" class="tac" value="濃縮"> 濃縮</label>
+            <label class="check-item"><input type="checkbox" class="tac" value="加速"> 加速</label>
+            <label class="check-item"><input type="checkbox" class="tac" value="跨領域統整"> 跨領域統整</label>
           </div>
+          <div class="fg" style="margin-top:12px"><label>其他補充</label><input type="text" id="t-aco" placeholder="其他..."></div>
         </div>
-      </div>
-      <div class="card">
-        <div class="card-title">學年目標</div>
-        <textarea id="course-goal" rows="5" placeholder="請輸入整個學期的課程目標（5 點以內即可）..."></textarea>
-        <p class="hint">提示：描述學生在本學期預期達到的學習成果</p>
-      </div>
-      <div class="nav-btns">
-        <button class="btn-outline" onclick="goTo(0)">← 上一步</button>
-        <button class="btn-primary" onclick="goTo(2)">下一步 →</button>
-      </div>
-    </section>
-
-    <!-- Section 2: 學習重點 -->
-    <section class="section" id="sec2">
-      <div class="card">
-        <div class="card-title">核心素養</div>
-        <div class="competency-block">
-          <div class="comp-cat">A 自主行動</div>
+        <div class="card">
+          <div class="card-title">學習歷程調整策略 <span class="badge-tpl">範本</span></div>
           <div class="check-group">
-            <label class="check-item"><input type="checkbox" class="comp" value="A1.身心素質與自我精進"> A1 身心素質與自我精進</label>
-            <label class="check-item"><input type="checkbox" class="comp" value="A2.系統思考與問題解決"> A2 系統思考與問題解決</label>
-            <label class="check-item"><input type="checkbox" class="comp" value="A3.規劃執行與創新應變"> A3 規劃執行與創新應變</label>
+            <label class="check-item"><input type="checkbox" class="tap" value="高層次思考"> 高層次思考</label>
+            <label class="check-item"><input type="checkbox" class="tap" value="開放式問題"> 開放式問題</label>
+            <label class="check-item"><input type="checkbox" class="tap" value="發現式學習"> 發現式學習</label>
+            <label class="check-item"><input type="checkbox" class="tap" value="推理的證據"> 推理的證據</label>
+            <label class="check-item"><input type="checkbox" class="tap" value="選擇的自由"> 選擇的自由</label>
+            <label class="check-item"><input type="checkbox" class="tap" value="團體式的互動"> 團體式的互動</label>
+            <label class="check-item"><input type="checkbox" class="tap" value="彈性的教學進度"> 彈性的教學進度</label>
+            <label class="check-item"><input type="checkbox" class="tap" value="多樣性的歷程"> 多樣性的歷程</label>
+          </div>
+          <div class="fg" style="margin-top:12px"><label>其他補充</label><input type="text" id="t-apo" placeholder="其他..."></div>
+        </div>
+        <div class="nav-btns">
+          <button class="btn-outline" onclick="tplGo(1)">← 上一步</button>
+          <button class="btn-primary" onclick="tplGo(3)">下一步 →</button>
+        </div>
+      </div>
+
+      <!-- 範本步驟 3：週次內容 -->
+      <div class="tsec" id="t3">
+        <div class="card">
+          <div class="card-title">週次課程內容 <span class="badge-tpl">範本</span></div>
+          <p class="hint" style="margin-bottom:12px">在這裡設定週次、課程內容、教學重點。之後每位學生只需選擇評量結果即可。</p>
+          <div class="week-header week-tpl-grid">
+            <span>週次</span><span>課程內容 / 單元</span><span>教學重點</span><span>學習內容調整</span><span></span>
+          </div>
+          <div id="t-wlist"></div>
+          <button class="btn-add-row" onclick="addTplW()">＋ 新增週次</button>
+        </div>
+        <div class="nav-btns">
+          <button class="btn-outline" onclick="tplGo(2)">← 上一步</button>
+          <button class="btn-save-tpl" onclick="saveTpl()">✓ 儲存範本，前往填學生 →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== 學生 IGP Panel ========== -->
+    <div class="panel" id="panel-stu">
+
+      <div class="card card-stu-list">
+        <div class="card-title">學生清單 <span class="badge-stu">選取學生後填寫評量與評語</span></div>
+        <div class="stu-selector" id="stu-selector">
+          <button class="btn-add-stu" onclick="addStu()">＋ 新增學生</button>
+        </div>
+        <div id="cur-stu-label" class="cur-stu-label">請先新增或選取學生</div>
+      </div>
+
+      <div id="stu-form" style="display:none">
+        <div class="card card-readonly">
+          <div class="card-title">課程資料（來自範本，所有學生共用）<span class="badge-tpl">範本</span></div>
+          <div class="row-2">
+            <div class="fg"><label>課程名稱</label><div class="readonly-field" id="r-cn">—</div></div>
+            <div class="fg"><label>學年度學期</label><div class="readonly-field" id="r-year">—</div></div>
+          </div>
+          <div class="row-2">
+            <div class="fg"><label>教學年級</label><div class="readonly-field" id="r-grade">—</div></div>
+            <div class="fg"><label>教學者</label><div class="readonly-field" id="r-teacher">—</div></div>
+          </div>
+          <div class="fg"><label>學年目標</label><div class="readonly-field multiline" id="r-goal">—</div></div>
+          <div class="fg"><label>核心素養</label><div class="readonly-field" id="r-comp">—</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">週次評量結果 <span class="badge-stu">只需填這裡</span></div>
+          <p class="hint" style="margin-bottom:10px">週次與課程內容已從範本帶入，只需為每位學生選擇評量方式與結果</p>
+          <div class="week-header stu-week-grid">
+            <span>週次</span><span>課程內容</span><span>教學重點</span><span>評量方式</span><span>評量結果</span>
+          </div>
+          <div id="stu-wlist"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">質性評語 <span class="badge-stu">只需填這裡</span></div>
+          <p class="hint" style="margin-bottom:12px">點選詞語標籤快速插入，再自行補充修改</p>
+
+          <div class="comment-block">
+            <div class="comment-label">學習態度</div>
+            <div class="tag-row">
+              <span class="tag" onclick="sins('att','學習態度積極主動，')">積極主動</span>
+              <span class="tag" onclick="sins('att','上課專注認真，')">專注認真</span>
+              <span class="tag" onclick="sins('att','能主動提問並表達想法，')">主動提問</span>
+              <span class="tag" onclick="sins('att','對學習內容展現高度興趣，')">高度興趣</span>
+              <span class="tag" onclick="sins('att','能持續追求更深入的知識，')">持續學習</span>
+              <span class="tag" onclick="sins('att','展現出對探究學習的熱忱，')">探究熱忱</span>
+            </div>
+            <textarea id="att" rows="2" placeholder="學習態度評語..."></textarea>
+          </div>
+
+          <div class="comment-block">
+            <div class="comment-label">學科表現</div>
+            <div class="tag-row">
+              <span class="tag" onclick="sins('aca','展現優異的學習成果，')">優異成果</span>
+              <span class="tag" onclick="sins('aca','具備紮實的基礎能力，')">基礎紮實</span>
+              <span class="tag" onclick="sins('aca','能靈活運用所學解決問題，')">靈活應用</span>
+              <span class="tag" onclick="sins('aca','邏輯思維清晰，推理能力強，')">邏輯清晰</span>
+              <span class="tag" onclick="sins('aca','在進階題目上有亮眼表現，')">進階亮眼</span>
+              <span class="tag" onclick="sins('aca','創意思考能力突出，')">創意思考</span>
+            </div>
+            <textarea id="aca" rows="2" placeholder="學科表現評語..."></textarea>
+          </div>
+
+          <div class="comment-block">
+            <div class="comment-label">課堂互動</div>
+            <div class="tag-row">
+              <span class="tag" onclick="sins('soc','樂於與同學分享學習心得，')">樂於分享</span>
+              <span class="tag" onclick="sins('soc','在小組合作中能適時領導討論，')">領導討論</span>
+              <span class="tag" onclick="sins('soc','尊重他人意見並能整合不同觀點，')">整合觀點</span>
+              <span class="tag" onclick="sins('soc','表達能力優秀，能清楚說明思路，')">清楚表達</span>
+              <span class="tag" onclick="sins('soc','積極參與各項學習活動，')">積極參與</span>
+            </div>
+            <textarea id="soc" rows="2" placeholder="課堂互動評語..."></textarea>
+          </div>
+
+          <div class="comment-block">
+            <div class="comment-label">成長與建議</div>
+            <div class="tag-row">
+              <span class="tag" onclick="sins('gro','建議持續加強書面表達能力，')">加強書寫</span>
+              <span class="tag" onclick="sins('gro','鼓勵勇於嘗試不同解題策略，')">嘗試多元</span>
+              <span class="tag" onclick="sins('gro','未來可朝更高層次的競賽方向挑戰，')">競賽挑戰</span>
+              <span class="tag" onclick="sins('gro','期望能在自主學習方面更加精進，')">自主精進</span>
+              <span class="tag" onclick="sins('gro','整體表現令人肯定，持續努力必有佳績，')">持續努力</span>
+            </div>
+            <textarea id="gro" rows="2" placeholder="成長與建議評語..."></textarea>
           </div>
         </div>
-        <div class="competency-block">
-          <div class="comp-cat">B 溝通互動</div>
-          <div class="check-group">
-            <label class="check-item"><input type="checkbox" class="comp" value="B1.符號運用與溝通表達"> B1 符號運用與溝通表達</label>
-            <label class="check-item"><input type="checkbox" class="comp" value="B2.科技資訊與媒體素養"> B2 科技資訊與媒體素養</label>
-            <label class="check-item"><input type="checkbox" class="comp" value="B3.藝術涵養與美感素養"> B3 藝術涵養與美感素養</label>
-          </div>
-        </div>
-        <div class="competency-block">
-          <div class="comp-cat">C 社會參與</div>
-          <div class="check-group">
-            <label class="check-item"><input type="checkbox" class="comp" value="C1.道德實踐與公民意識"> C1 道德實踐與公民意識</label>
-            <label class="check-item"><input type="checkbox" class="comp" value="C2.人際關係與團隊合作"> C2 人際關係與團隊合作</label>
-            <label class="check-item"><input type="checkbox" class="comp" value="C3.多元文化與國際理解"> C3 多元文化與國際理解</label>
+
+        <div class="nav-btns">
+          <span></span>
+          <div style="display:flex;gap:8px">
+            <button class="btn-outline" onclick="switchMode('pvw')">查看全部 →</button>
+            <button class="btn-primary" id="btn-save-stu" onclick="saveStu()">💾 儲存到 Google Sheets</button>
           </div>
         </div>
       </div>
-      <div class="card">
-        <div class="card-title">學習表現</div>
-        <textarea id="perf-text" rows="4" placeholder="請輸入學習表現指標（參考課程計畫）..."></textarea>
-      </div>
-      <div class="card">
-        <div class="card-title">學習內容</div>
-        <textarea id="content-text" rows="4" placeholder="請輸入學習內容（參考課程計畫）..."></textarea>
-      </div>
-      <div class="nav-btns">
-        <button class="btn-outline" onclick="goTo(1)">← 上一步</button>
-        <button class="btn-primary" onclick="goTo(3)">下一步 →</button>
-      </div>
-    </section>
+    </div>
 
-    <!-- Section 3: 課程調整策略 -->
-    <section class="section" id="sec3">
-      <div class="card">
-        <div class="card-title">學習內容調整策略</div>
-        <div class="check-group">
-          <label class="check-item"><input type="checkbox" class="adj-content" value="重組"> 重組</label>
-          <label class="check-item"><input type="checkbox" class="adj-content" value="加深"> 加深</label>
-          <label class="check-item"><input type="checkbox" class="adj-content" value="加廣"> 加廣</label>
-          <label class="check-item"><input type="checkbox" class="adj-content" value="濃縮"> 濃縮</label>
-          <label class="check-item"><input type="checkbox" class="adj-content" value="加速"> 加速</label>
-          <label class="check-item"><input type="checkbox" class="adj-content" value="跨領域統整教學主題"> 跨領域統整</label>
-        </div>
-        <div class="form-group" style="margin-top:12px">
-          <label>其他補充</label>
-          <input type="text" id="adj-content-other" placeholder="其他...">
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">學習歷程調整策略</div>
-        <div class="check-group">
-          <label class="check-item"><input type="checkbox" class="adj-proc" value="高層次思考"> 高層次思考</label>
-          <label class="check-item"><input type="checkbox" class="adj-proc" value="開放式問題"> 開放式問題</label>
-          <label class="check-item"><input type="checkbox" class="adj-proc" value="發現式學習"> 發現式學習</label>
-          <label class="check-item"><input type="checkbox" class="adj-proc" value="推理的證據"> 推理的證據</label>
-          <label class="check-item"><input type="checkbox" class="adj-proc" value="選擇的自由"> 選擇的自由</label>
-          <label class="check-item"><input type="checkbox" class="adj-proc" value="團體式的互動"> 團體式的互動</label>
-          <label class="check-item"><input type="checkbox" class="adj-proc" value="彈性的教學進度"> 彈性的教學進度</label>
-          <label class="check-item"><input type="checkbox" class="adj-proc" value="多樣性的歷程"> 多樣性的歷程</label>
-        </div>
-        <div class="form-group" style="margin-top:12px">
-          <label>其他補充</label>
-          <input type="text" id="adj-proc-other" placeholder="其他...">
-        </div>
-      </div>
-      <div class="nav-btns">
-        <button class="btn-outline" onclick="goTo(2)">← 上一步</button>
-        <button class="btn-primary" onclick="goTo(4)">下一步 →</button>
-      </div>
-    </section>
-
-    <!-- Section 4: 週次內容 -->
-    <section class="section" id="sec4">
-      <div class="card">
-        <div class="card-title">週次課程內容與評量</div>
-        <p class="hint" style="margin-bottom:12px">
-          評量方式：1.口頭發表 2.書面報告 3.作業單 4.器材操作 5.成品製作 6.活動設計 7.觀察評量 8.演示評量 9.檔案評量 10.其他
-        </p>
-        <div class="week-table-header">
-          <span>週次</span><span>課程內容 / 單元</span><span>教學重點</span><span>評量方式</span><span>評量結果</span><span></span>
-        </div>
-        <div id="week-list"></div>
-        <button class="btn-add-row" onclick="addWeek()">＋ 新增週次</button>
-      </div>
-      <div class="nav-btns">
-        <button class="btn-outline" onclick="goTo(3)">← 上一步</button>
-        <button class="btn-primary" onclick="goTo(5)">下一步 →</button>
-      </div>
-    </section>
-
-    <!-- Section 5: 質性評語 -->
-    <section class="section" id="sec5">
-      <div class="card">
-        <div class="card-title">質性評語</div>
-        <p class="hint" style="margin-bottom:1rem">點選下方詞語可快速插入，再自行補充修改</p>
-
-        <div class="comment-block">
-          <div class="comment-label">📚 學習態度</div>
-          <div class="tag-row">
-            <span class="tag" onclick="insertTag('attitude','學習態度積極主動，')">積極主動</span>
-            <span class="tag" onclick="insertTag('attitude','上課專注認真，')">專注認真</span>
-            <span class="tag" onclick="insertTag('attitude','能主動提問並表達想法，')">主動提問</span>
-            <span class="tag" onclick="insertTag('attitude','對學習內容展現高度興趣，')">高度興趣</span>
-            <span class="tag" onclick="insertTag('attitude','能持續追求更深入的知識，')">持續學習</span>
-            <span class="tag" onclick="insertTag('attitude','展現出對探究學習的熱忱，')">探究熱忱</span>
-          </div>
-          <textarea id="comment-attitude" rows="3" placeholder="學習態度評語..."></textarea>
-        </div>
-
-        <div class="comment-block">
-          <div class="comment-label">🎯 學科表現</div>
-          <div class="tag-row">
-            <span class="tag" onclick="insertTag('academic','在課程中展現優異的學習成果，')">優異成果</span>
-            <span class="tag" onclick="insertTag('academic','具備紮實的基礎能力，')">基礎紮實</span>
-            <span class="tag" onclick="insertTag('academic','能靈活運用所學解決問題，')">靈活應用</span>
-            <span class="tag" onclick="insertTag('academic','邏輯思維清晰，推理能力強，')">邏輯清晰</span>
-            <span class="tag" onclick="insertTag('academic','在進階題目上有亮眼表現，')">進階亮眼</span>
-            <span class="tag" onclick="insertTag('academic','創意思考能力突出，')">創意思考</span>
-          </div>
-          <textarea id="comment-academic" rows="3" placeholder="學科表現評語..."></textarea>
-        </div>
-
-        <div class="comment-block">
-          <div class="comment-label">🤝 課堂互動 / 合作</div>
-          <div class="tag-row">
-            <span class="tag" onclick="insertTag('social','樂於與同學分享學習心得，')">樂於分享</span>
-            <span class="tag" onclick="insertTag('social','在小組合作中能適時領導討論，')">領導討論</span>
-            <span class="tag" onclick="insertTag('social','尊重他人意見並能整合不同觀點，')">整合觀點</span>
-            <span class="tag" onclick="insertTag('social','表達能力優秀，能清楚說明思路，')">清楚表達</span>
-            <span class="tag" onclick="insertTag('social','積極參與各項學習活動，')">積極參與</span>
-          </div>
-          <textarea id="comment-social" rows="3" placeholder="課堂互動評語..."></textarea>
-        </div>
-
-        <div class="comment-block">
-          <div class="comment-label">🌱 成長與建議</div>
-          <div class="tag-row">
-            <span class="tag" onclick="insertTag('growth','建議持續加強書面表達能力，')">加強書寫</span>
-            <span class="tag" onclick="insertTag('growth','鼓勵勇於嘗試不同解題策略，')">嘗試多元</span>
-            <span class="tag" onclick="insertTag('growth','未來可朝更高層次的競賽方向挑戰，')">競賽挑戰</span>
-            <span class="tag" onclick="insertTag('growth','期望能在自主學習方面更加精進，')">自主精進</span>
-            <span class="tag" onclick="insertTag('growth','整體表現令人肯定，持續努力必有佳績，')">持續努力</span>
-          </div>
-          <textarea id="comment-growth" rows="3" placeholder="成長與建議評語..."></textarea>
-        </div>
-      </div>
-      <div class="nav-btns">
-        <button class="btn-outline" onclick="goTo(4)">← 上一步</button>
-        <button class="btn-primary" onclick="goTo(6)">預覽 / 匯出 →</button>
-      </div>
-    </section>
-
-    <!-- Section 6: 預覽匯出 -->
-    <section class="section" id="sec6">
-      <div id="preview-area"></div>
+    <!-- ========== 批次預覽 Panel ========== -->
+    <div class="panel" id="panel-pvw">
       <div class="export-actions">
-        <button class="btn-primary" onclick="saveToSheet()" id="btn-save">
-          💾 儲存到 Google Sheets
-        </button>
-        <button class="btn-outline" onclick="copyText()">📋 複製文字</button>
+        <button class="btn-primary" onclick="saveAll()" id="btn-save-all">💾 批次儲存所有學生</button>
+        <button class="btn-outline" onclick="copyAll()">📋 複製全部文字</button>
         <button class="btn-outline" onclick="window.print()">🖨️ 列印</button>
       </div>
-      <div id="save-msg" class="save-msg" style="display:none"></div>
-      <div class="nav-btns">
-        <button class="btn-outline" onclick="goTo(5)">← 返回修改</button>
-        <span></span>
-      </div>
-    </section>
+      <div id="pvw-area"></div>
+    </div>
 
   </main>
 </div>
