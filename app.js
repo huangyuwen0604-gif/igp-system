@@ -9,6 +9,9 @@ let students = [];
 let curStuIdx = -1;
 let _pendingCourse = null;
 
+const ASSESSMENT_METHODS = ['1.口頭發表','2.書面報告','3.作業單','4.器材操作','5.成品製作','6.活動設計','7.觀察評量','8.演示評量','9.檔案評量'];
+const ASSESSMENT_RESULTS = ['特優','優','良','中等','中下','待加強'];
+
 document.addEventListener('DOMContentLoaded', () => {
   initDbSelector();
   initStuSelector();
@@ -151,6 +154,25 @@ function tplGo(n) {
 function chk(cls) { return [...document.querySelectorAll('.' + cls + ':checked')].map(c => c.value).join('、'); }
 function v(id) { return (document.getElementById(id) || {}).value || ''; }
 function el(id) { return document.getElementById(id); }
+function optionList(items, selected, placeholder) {
+  return `<option value="">${placeholder}</option>` +
+    items.map(item => `<option value="${item}" ${selected===item?'selected':''}>${item}</option>`).join('');
+}
+
+function defaultArray(name) {
+  const weeks = tpl.weeks || [];
+  const values = tpl[name] || [];
+  return weeks.map((_, i) => values[i] || '');
+}
+
+function newStudentData(extra = {}) {
+  return {
+    results: defaultArray('defaultResults'),
+    methods: defaultArray('defaultMethods'),
+    comment: '',
+    ...extra,
+  };
+}
 
 // ===== 範本週次 =====
 function addTplW() {
@@ -186,6 +208,8 @@ function renderTplW() {
 
 // ===== 儲存範本 =====
 function saveTpl(silent = false) {
+  const oldDefaultMethods = tpl.defaultMethods || [];
+  const oldDefaultResults = tpl.defaultResults || [];
   tpl = {
     courseName: v('t-cn'), year: v('t-year'), sem: v('t-sem'),
     grade: v('t-grade'), hours: v('t-hours'), teacher: v('t-teacher'),
@@ -210,6 +234,8 @@ function saveTpl(silent = false) {
       };
     }),
   };
+  tpl.defaultMethods = tpl.weeks.map((_, i) => oldDefaultMethods[i] || '');
+  tpl.defaultResults = tpl.weeks.map((_, i) => oldDefaultResults[i] || '');
   // 立即更新學生頁所有唯讀欄位（不需等 selectStu）
   syncTplDisplay();
   // 若已有學生選取，重新渲染週次列表（確保週次也即時更新）
@@ -268,7 +294,7 @@ function addStuFromDB() {
   if (students.find(s => s.name === name && s.cls === cls)) {
     showMsg(`${name} 已在清單中`, 'err'); return;
   }
-  students.push({ name, cls, results: [], methods: [], comment: '' });
+  students.push(newStudentData({ name, cls }));
   renderStuSelector();
   selectStu(students.length - 1);
   showMsg(`✅ 已加入 ${cls}班 ${name}`, 'ok');
@@ -277,7 +303,7 @@ function addStuFromDB() {
 function addStu() {
   const name = prompt('請輸入學生姓名：', '');
   if (!name || !name.trim()) return;
-  students.push({ name: name.trim(), results: [], methods: [], comment: '' });
+  students.push(newStudentData({ name: name.trim() }));
   renderStuSelector();
   selectStu(students.length - 1);
 }
@@ -310,9 +336,21 @@ function renderStuWlist(stu) {
     return;
   }
   list.innerHTML = '';
+  const tools = document.createElement('div');
+  tools.className = 'assessment-tools';
+  tools.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px 0;padding:10px;border:1px solid #dbe4f0;border-radius:10px;background:#f8fbff';
+  tools.innerHTML = `
+    <select id="bulk-method" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px">${optionList(ASSESSMENT_METHODS, '', '全部評量方式')}</select>
+    <select id="bulk-result" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px">${optionList(ASSESSMENT_RESULTS, '', '全部評量結果')}</select>
+    <button class="btn-outline" style="padding:8px 12px;font-size:13px" onclick="applyBulkAssessmentToCurrent()">套用到目前學生</button>
+    <button class="btn-outline" style="padding:8px 12px;font-size:13px" onclick="saveAssessmentDefaultsFromCurrent()">設為此課程預設</button>
+    <button class="btn-outline" style="padding:8px 12px;font-size:13px" onclick="applyDefaultsToAllStudents()">預設套到全部學生</button>
+    <button class="btn-outline" style="padding:8px 12px;font-size:13px" onclick="copyCurrentAssessmentToAllStudents()">目前學生帶入全部</button>
+  `;
+  list.appendChild(tools);
   tpl.weeks.forEach((w, i) => {
-    const curResult = (stu.results && stu.results[i]) || '';
-    const curMethod = (stu.methods && stu.methods[i]) || '';
+    const curResult = (stu.results && stu.results[i]) || (tpl.defaultResults && tpl.defaultResults[i]) || '';
+    const curMethod = (stu.methods && stu.methods[i]) || (tpl.defaultMethods && tpl.defaultMethods[i]) || '';
     const d = document.createElement('div');
     d.className = 'week-row-stu';
     d.innerHTML = `
@@ -320,14 +358,10 @@ function renderStuWlist(stu) {
       <span class="week-text">${w.co}</span>
       <span class="week-text">${w.fo}</span>
       <select id="sm-${i}" onchange="updateMethod(${i},this.value)">
-        <option value="">評量方式</option>
-        ${['1.口頭發表','2.書面報告','3.作業單','4.器材操作','5.成品製作','6.活動設計','7.觀察評量','8.演示評量','9.檔案評量']
-          .map(m => `<option ${curMethod===m?'selected':''}>${m}</option>`).join('')}
+        ${optionList(ASSESSMENT_METHODS, curMethod, '評量方式')}
       </select>
       <select id="sr-${i}" onchange="updateResult(${i},this.value)">
-        <option value="">評量結果</option>
-        ${['特優','優','良','中等','中下','待加強']
-          .map(r => `<option ${curResult===r?'selected':''}>${r}</option>`).join('')}
+        ${optionList(ASSESSMENT_RESULTS, curResult, '評量結果')}
       </select>`;
     list.appendChild(d);
   });
@@ -335,6 +369,53 @@ function renderStuWlist(stu) {
 
 function updateResult(i, val) { if (curStuIdx<0) return; if (!students[curStuIdx].results) students[curStuIdx].results=[]; students[curStuIdx].results[i]=val; }
 function updateMethod(i, val) { if (curStuIdx<0) return; if (!students[curStuIdx].methods) students[curStuIdx].methods=[]; students[curStuIdx].methods[i]=val; }
+
+function applyBulkAssessmentToCurrent() {
+  if (curStuIdx < 0) { showMsg('請先選取學生', 'err'); return; }
+  const method = v('bulk-method');
+  const result = v('bulk-result');
+  if (!method && !result) { showMsg('請先選擇要套用的評量方式或結果', 'err'); return; }
+  const s = students[curStuIdx];
+  if (!s.methods) s.methods = [];
+  if (!s.results) s.results = [];
+  (tpl.weeks || []).forEach((_, i) => {
+    if (method) s.methods[i] = method;
+    if (result) s.results[i] = result;
+  });
+  renderStuWlist(s);
+  showMsg('✅ 已套用到目前學生全部週次', 'ok');
+}
+
+function saveAssessmentDefaultsFromCurrent() {
+  if (curStuIdx < 0) { showMsg('請先選取學生', 'err'); return; }
+  saveCurStuData();
+  const s = students[curStuIdx];
+  tpl.defaultMethods = (tpl.weeks || []).map((_, i) => (s.methods && s.methods[i]) || '');
+  tpl.defaultResults = (tpl.weeks || []).map((_, i) => (s.results && s.results[i]) || '');
+  showMsg('✅ 已設為此課程預設；之後新增學生會自動帶入', 'ok');
+}
+
+function applyDefaultsToAllStudents() {
+  if (!students.length) { showMsg('尚未新增任何學生', 'err'); return; }
+  students.forEach(s => {
+    s.methods = defaultArray('defaultMethods');
+    s.results = defaultArray('defaultResults');
+  });
+  if (curStuIdx >= 0) renderStuWlist(students[curStuIdx]);
+  showMsg(`✅ 已將課程預設套用到 ${students.length} 位學生`, 'ok');
+}
+
+function copyCurrentAssessmentToAllStudents() {
+  if (curStuIdx < 0) { showMsg('請先選取學生', 'err'); return; }
+  saveCurStuData();
+  const src = students[curStuIdx];
+  students.forEach(s => {
+    if (s === src) return;
+    s.methods = (tpl.weeks || []).map((_, i) => (src.methods && src.methods[i]) || '');
+    s.results = (tpl.weeks || []).map((_, i) => (src.results && src.results[i]) || '');
+  });
+  showMsg(`✅ 已把 ${src.name} 的評量帶入其他學生`, 'ok');
+}
 
 function saveCurStuData() {
   if (curStuIdx < 0) return;
@@ -583,4 +664,3 @@ function exportAllCoursesJSON() {
   a.click();
   showMsg(`✅ 已匯出全部 ${COURSE_DB.length} 門課程`, 'ok');
 }
-
