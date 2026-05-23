@@ -273,12 +273,8 @@ function addStuFromDB() {
   showMsg(`✅ 已加入 ${cls}班 ${name}`, 'ok');
 }
 
-function addStuManual() {
-  const name = prompt('請輸入學生姓名：', '');
-  if (!name || !name.trim()) return;
-  students.push({ name: name.trim(), cls: '', results: [], methods: [], comment: '' });
-  renderStuSelector();
-  selectStu(students.length - 1);
+function addStu() {
+  addStuManual();
 }
 
 function addStu() {
